@@ -17,7 +17,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Home, FileText, Shield } from 'lucide-react';
+import { Home, FileText, Shield, LayoutDashboard } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -27,6 +27,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     pageTitle = 'Moderation Tools';
   } else if (pathname === '/documentation') {
     pageTitle = 'API Documentation';
+  } else if (pathname === '/overview') {
+    pageTitle = 'Usage Overview';
   }
 
   return (
@@ -52,6 +54,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <a>
                     <Home />
                     <span className="group-data-[state=collapsed]:hidden">Moderation Tools</span>
+                  </a>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/overview" passHref legacyBehavior>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/overview'}
+                  tooltip="Overview"
+                >
+                  <a>
+                    <LayoutDashboard />
+                    <span className="group-data-[state=collapsed]:hidden">Overview</span>
                   </a>
                 </SidebarMenuButton>
               </Link>
