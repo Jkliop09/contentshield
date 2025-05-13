@@ -22,7 +22,7 @@ export function GoogleSignInButton() {
       // onAuthStateChanged in AuthProvider will handle user state update
       // and potential redirect if middleware is set up for it.
       // For explicit redirect after successful sign-in:
-      router.push('/'); 
+      router.push('/overview'); 
       toast({
         title: 'Sign In Successful',
         description: 'Welcome to Content Guardian!',
@@ -35,7 +35,10 @@ export function GoogleSignInButton() {
         errorMessage = 'Sign-in popup closed. Please try again.';
       } else if (firebaseError.code === 'auth/cancelled-popup-request') {
         errorMessage = 'Sign-in cancelled. Please try again.';
-      } else if (firebaseError.code) {
+      } else if (firebaseError.code === 'auth/unauthorized-domain') {
+        errorMessage = 'This domain is not authorized for Firebase Authentication. Please check your Firebase console settings.';
+      }
+       else if (firebaseError.code) {
         errorMessage = `Google Sign-In failed: ${firebaseError.message}`;
       }
       toast({
@@ -64,3 +67,4 @@ export function GoogleSignInButton() {
     </Button>
   );
 }
+

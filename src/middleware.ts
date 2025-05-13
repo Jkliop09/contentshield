@@ -21,31 +21,49 @@ async function getCurrentUser(request: NextRequest): Promise<{ id: string } | nu
       return null;
     }
   }
+  // A more direct way to check auth state might be needed if you're not setting a specific session cookie
+  // and relying on Firebase's client-side persistence. However, middleware runs server-side.
+  // For now, this simplistic check is a placeholder.
+  // If you want to rely on client-side auth status for redirects, that's typically handled in client components using useAuth and useRouter.
   return null;
 }
 
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const currentUser = await getCurrentUser(request); // Placeholder
+  
+  // This simplified getCurrentUser won't reflect actual Firebase auth state reliably in middleware.
+  // For robust server-side auth checks, Firebase Admin SDK + session cookies are recommended.
+  // The logic below assumes `currentUser` can somehow be determined server-side.
+  // A common pattern is to set an HTTP-only cookie after client-side Firebase login
+  // and verify that cookie here using Firebase Admin SDK.
 
-  const protectedAppRoutes = ['/', '/overview', '/documentation']; // Add other app routes that need protection
+  const currentUser = await getCurrentUser(request); 
+
+  const protectedAppRoutes = ['/', '/overview', '/documentation'];
   const authRoutes = ['/login', '/signup'];
 
-  // If user is logged in
+  // If user is logged in (based on our placeholder check)
   if (currentUser) {
-    // If trying to access login/signup page while logged in, redirect to home
+    // If trying to access login/signup page while logged in, redirect to overview (dashboard)
     if (authRoutes.includes(pathname)) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/overview', request.url));
     }
   } else { // If user is not logged in
     // If trying to access a protected app route, redirect to login
-    if (protectedAppRoutes.some(route => pathname === route || (route === '/' && pathname.startsWith('/')) && !pathname.startsWith('/api') )) {
-        // Allow access to root path if it's for static assets or _next
-        if (pathname === '/' && (request.nextUrl.pathname.startsWith('/_next') || request.nextUrl.pathname.includes('.'))) {
+    // Ensure that the root path check correctly distinguishes between the page and static assets.
+    const isProtectedRouteAccess = protectedAppRoutes.some(route => {
+        if (route === '/') return pathname === '/'; // Exact match for root
+        return pathname.startsWith(route); // Match for other protected routes
+    });
+
+    if (isProtectedRouteAccess) {
+        // Allow access to static assets or _next files even if on a protected path conceptually
+        if (request.nextUrl.pathname.startsWith('/_next') || request.nextUrl.pathname.includes('.')) {
              return NextResponse.next();
         }
-        if (pathname !== '/login') { // Avoid redirect loop if already on login
+        // Avoid redirect loop if already on login or signup
+        if (!authRoutes.includes(pathname)) { 
             return NextResponse.redirect(new URL('/login', request.url));
         }
     }
@@ -61,7 +79,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except for static assets and API routes (handled separately)
-    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    // Match all routes except for static assets, _next/image, and favicon.ico.
+    // API routes are implicitly included here and then specifically allowed if they handle their own auth.
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
+
