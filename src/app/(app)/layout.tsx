@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Home, FileText, Shield, LayoutDashboard } from 'lucide-react';
+import { AuthButton } from '@/components/auth-button'; // Added AuthButton import
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -102,6 +103,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
            <h1 className="text-xl md:text-2xl font-semibold flex-1">
             {pageTitle}
           </h1>
+          <AuthButton /> {/* Added AuthButton here */}
         </header>
         <main className="flex-1 p-4 pt-0 md:p-6 lg:p-8">
           {children}
@@ -110,4 +112,3 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </SidebarProvider>
   );
 }
-
