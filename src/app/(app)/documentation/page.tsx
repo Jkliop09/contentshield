@@ -8,7 +8,7 @@ import { Terminal, BookOpenCheck } from "lucide-react";
 
 export default function DocumentationPage() {
   const textApiCurl = `curl -X POST \\
-  http://localhost:9002/api/moderate-text \\
+  https://contentshield.vercel.app/api/moderate-text \\
   -H 'Content-Type: application/json' \\
   -d '{
     "text": "This is some example text to check for hate speech."
@@ -30,7 +30,7 @@ export default function DocumentationPage() {
 }`;
 
   const imageApiCurl = `curl -X POST \\
-  http://localhost:9002/api/moderate-image \\
+  https://contentshield.vercel.app/api/moderate-image \\
   -H 'Content-Type: application/json' \\
   -d '{
     "imageDataUri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
@@ -70,11 +70,11 @@ export default function DocumentationPage() {
 const sdkTextExample = `
 import { ContentGuardianSDK } from '@/lib/content-guardian-sdk';
 
-// For API calls from the same origin (e.g., within this Next.js app)
+// Initialize SDK (defaults to https://contentshield.vercel.app/)
 const sdk = new ContentGuardianSDK(); 
 
-// Or, if calling from a different domain:
-// const sdk = new ContentGuardianSDK('https://your-deployed-api-server.com');
+// Or, if calling from the same origin (e.g., if API is hosted with this app):
+// const sdk = new ContentGuardianSDK(''); 
 
 async function checkText(textToCheck) {
   try {
@@ -101,7 +101,7 @@ async function checkText(textToCheck) {
 const sdkImageExample = `
 import { ContentGuardianSDK } from '@/lib/content-guardian-sdk';
 
-const sdk = new ContentGuardianSDK(); // Assumes same-origin API
+const sdk = new ContentGuardianSDK(); // Defaults to https://contentshield.vercel.app/
 
 // Helper function (as shown in cURL section or your own implementation)
 async function fileToDataUri(file) {
@@ -156,7 +156,7 @@ async function checkImage(imageFile) {
         <AlertTitle>Using the API</AlertTitle>
         <AlertDescription>
           You can use the Content Guardian API to programmatically moderate text and images using cURL or our SDK.
-          Ensure your API requests are made to the correct port (default is <code>9002</code> for this project in development).
+          The API is hosted at <code>https://contentshield.vercel.app/</code>.
           API responses might take a few seconds due to AI model processing.
         </AlertDescription>
       </Alert>
@@ -178,7 +178,7 @@ async function checkImage(imageFile) {
             <h3 className="font-semibold text-lg mb-1">1. Setup</h3>
             <p className="mb-2">
               The SDK is located at <code>src/lib/content-guardian-sdk.ts</code>.
-              If you are developing within this Next.js application, you can import it directly:
+              If you are developing within this Next.js application (e.g., for client-side components), you can import it directly:
             </p>
             <CodeBlock title="Importing the SDK">{`import { ContentGuardianSDK } from '@/lib/content-guardian-sdk';`}</CodeBlock>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -190,12 +190,15 @@ async function checkImage(imageFile) {
 
           <div>
             <h3 className="font-semibold text-lg mb-1">2. Initialization</h3>
-            <p className="mb-2">Create an instance of the SDK. You can optionally provide the base URL of your API server.</p>
-            <CodeBlock title="JavaScript/TypeScript">{`// For API calls from the same origin (e.g., from this Next.js app's frontend)
+            <p className="mb-2">Create an instance of the SDK. By default, it points to <code>https://contentshield.vercel.app/</code>.</p>
+            <CodeBlock title="JavaScript/TypeScript">{`// Default initialization (points to the deployed API)
 const sdk = new ContentGuardianSDK(); 
 
-// Or, if your API is hosted on a different domain:
-// const sdk = new ContentGuardianSDK('https://your-api-server.example.com');`}</CodeBlock>
+// For same-origin API calls (if your frontend and API are on the same domain and you want to use relative paths)
+// const sdk = new ContentGuardianSDK(''); 
+
+// To specify a different API server:
+// const sdk = new ContentGuardianSDK('https://your-custom-api-server.example.com');`}</CodeBlock>
           </div>
 
           <Card className="pt-4 bg-card/50 shadow-sm">
@@ -272,7 +275,7 @@ export interface ModerationError { // This is the shape of error from API if res
             <Terminal className="h-7 w-7 text-primary" />
             <CardTitle className="text-2xl">Direct API Usage (cURL)</CardTitle>
           </div>
-          <CardDescription>Use these examples if you prefer to interact with the API directly using tools like cURL.</CardDescription>
+          <CardDescription>Use these examples if you prefer to interact with the API directly using tools like cURL. The API is hosted at <code>https://contentshield.vercel.app/</code>.</CardDescription>
         </CardHeader>
         <CardContent>
             <Card className="pt-4 mb-6 bg-card/50 shadow-sm">
@@ -283,7 +286,7 @@ export interface ModerationError { // This is the shape of error from API if res
                 <CardContent className="space-y-4">
                 <div>
                     <h3 className="font-semibold text-lg mb-1">Endpoint</h3>
-                    <p><Badge variant="secondary">POST</Badge> <code>/api/moderate-text</code></p>
+                    <p><Badge variant="secondary">POST</Badge> <code>https://contentshield.vercel.app/api/moderate-text</code></p>
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg mb-1">Headers</h3>
@@ -325,7 +328,7 @@ export interface ModerationError { // This is the shape of error from API if res
                 <CardContent className="space-y-4">
                 <div>
                     <h3 className="font-semibold text-lg mb-1">Endpoint</h3>
-                    <p><Badge variant="secondary">POST</Badge> <code>/api/moderate-image</code></p>
+                    <p><Badge variant="secondary">POST</Badge> <code>https://contentshield.vercel.app/api/moderate-image</code></p>
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg mb-1">Headers</h3>

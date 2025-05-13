@@ -27,10 +27,11 @@ export class ContentGuardianSDK {
 
   /**
    * Initializes the SDK.
-   * @param baseServerUrl The base URL of the server hosting the Content Guardian API (e.g., 'http://localhost:9002' or '' for same-origin).
-   *                      Defaults to an empty string, assuming API calls are to the same origin.
+   * @param baseServerUrl The base URL of the server hosting the Content Guardian API.
+   *                      Defaults to 'https://contentshield.vercel.app/'.
+   *                      Provide an empty string (e.g. `new ContentGuardianSDK('')`) for same-origin API calls if needed.
    */
-  constructor(baseServerUrl: string = '') {
+  constructor(baseServerUrl: string = 'https://contentshield.vercel.app/') {
     this.baseServerUrl = baseServerUrl.endsWith('/') ? baseServerUrl.slice(0, -1) : baseServerUrl;
   }
 
@@ -98,3 +99,4 @@ export class ContentGuardianSDK {
     return this._request<ImageModerationResult>('/api/moderate-image', { imageDataUri });
   }
 }
+
