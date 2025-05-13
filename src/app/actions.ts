@@ -1,11 +1,12 @@
+
 'use server';
 
 import { moderateText, type ModerateTextInput, type ModerateTextOutput } from '@/ai/flows/moderate-text';
 import { moderateImage, type ModerateImageInput, type ModerateImageOutput } from '@/ai/flows/moderate-image';
 import { generateAndStoreApiKey } from '@/services/apiKeyService';
 import { z } from 'zod';
-import { auth } from '@/lib/firebase'; // Firebase client SDK auth instance
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // Firebase client SDK methods
+// Firebase client SDK auth instance and methods like createUserWithEmailAndPassword, signInWithEmailAndPassword are no longer used here for direct email/password auth.
+// Google Sign-In will be handled client-side.
 
 export interface TextModerationState {
   result?: ModerateTextOutput;
@@ -25,13 +26,7 @@ export interface ApiKeyGenerationState {
   timestamp?: number;
 }
 
-export interface AuthState {
-  message?: string;
-  error?: string | null;
-  success?: boolean;
-  timestamp?: number;
-}
-
+// Removed AuthState as it was tied to email/password form actions
 
 const textSchema = z.object({
   textToModerate: z.string().min(1, 'Text cannot be empty.').max(5000, 'Text is too long.'),
@@ -43,20 +38,7 @@ const imageSchema = z.object({
     .refine(file => ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type), 'Invalid image format. Supported formats: JPEG, PNG, WebP, GIF.'),
 });
 
-const signUpSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters long.'),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match.",
-  path: ['confirmPassword'],
-});
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(1, 'Password cannot be empty.'),
-});
-
+// Removed signUpSchema and loginSchema
 
 async function fileToDataUri(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
@@ -128,111 +110,4 @@ export async function handleGenerateApiKey(
   }
 }
 
-export async function handleSignUp(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const emailValue = formData.get('email') as string;
-  const passwordValue = formData.get('password') as string;
-  const confirmPasswordValue = formData.get('confirmPassword') as string;
-
-  // Server-side logging for incoming data
-  // console.log('handleSignUp action called with:', { emailValue, passwordValuePresent: !!passwordValue, confirmPasswordValuePresent: !!confirmPasswordValue });
-
-
-  const validation = signUpSchema.safeParse({ email: emailValue, password: passwordValue, confirmPassword: confirmPasswordValue });
-
-  if (!validation.success) {
-    const errorMessages = validation.error.errors.map(e => e.message).join(', ');
-    // console.error('Sign up validation failed:', errorMessages);
-    return { error: errorMessages, success: false, timestamp: Date.now() };
-  }
-
-  const { email, password } = validation.data;
-
-  try {
-    // This is where Firebase initialization is critical.
-    // If NEXT_PUBLIC_FIREBASE_... env vars are not set, `auth` might be uninitialized.
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      console.error("CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is not set. Firebase operations will fail.");
-      // Forcing an error message if Firebase seems unconfigured.
-      return { error: "Firebase configuration is missing. Please check server logs and ensure Firebase environment variables (e.g., NEXT_PUBLIC_FIREBASE_API_KEY) are correctly set in your .env file.", success: false, timestamp: Date.now() };
-    }
-    
-    // console.log(`Attempting to create user: ${email}`);
-    await createUserWithEmailAndPassword(auth, email, password);
-    // console.log(`User created successfully: ${email}`);
-    return { message: 'Sign up successful! Please log in.', success: true, timestamp: Date.now() };
-
-  } catch (e: any) {
-    // console.error('Sign up error caught in try-catch (raw object):', e); 
-
-    let detailedErrorMessage = 'An unknown error occurred during sign up.';
-    if (e instanceof Error) { 
-      detailedErrorMessage = e.message;
-    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') { 
-      detailedErrorMessage = `Firebase Auth Error (${e.code}): ${e.message}`;
-    } else if (e && typeof e.message === 'string') { 
-      detailedErrorMessage = e.message;
-    } else if (typeof e === 'string') { 
-      detailedErrorMessage = e;
-    } else if (typeof e === 'object' && e !== null) {
-        try {
-            detailedErrorMessage = `Unknown error object: ${JSON.stringify(e)}`;
-        } catch (stringifyError) {
-            detailedErrorMessage = 'Unknown error object (could not stringify).';
-        }
-    }
-    
-    if (!detailedErrorMessage || String(detailedErrorMessage).trim() === '') {
-        detailedErrorMessage = 'An unspecified error occurred during sign up. This might be due to missing Firebase configuration or network issues. Please check server logs and ensure Firebase environment variables are set.';
-    }
-    
-    // console.error('Sign up error (processed message to be returned to client):', detailedErrorMessage);
-    return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
-  }
-}
-
-export async function handleLogin(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const emailValue = formData.get('email') as string;
-  const passwordValue = formData.get('password') as string;
-
-  const validation = loginSchema.safeParse({ email: emailValue, password: passwordValue });
-
-  if (!validation.success) {
-    return { error: validation.error.errors.map(e => e.message).join(', '), success: false, timestamp: Date.now() };
-  }
-  
-  const { email, password } = validation.data;
-
-  try {
-    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      console.error("CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is not set. Firebase operations will fail.");
-      return { error: "Firebase configuration is missing. Login cannot proceed.", success: false, timestamp: Date.now() };
-    }
-    await signInWithEmailAndPassword(auth, email, password);
-    return { message: 'Login successful!', success: true, timestamp: Date.now() };
-  } catch (e: any) {
-    // console.error('Login error (raw object):', e);
-    let detailedErrorMessage = 'An unknown error occurred during login.';
-     if (e instanceof Error) {
-      detailedErrorMessage = e.message;
-    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') {
-      detailedErrorMessage = `Firebase Auth Error (${e.code}): ${e.message}`;
-    } else if (e && typeof e.message === 'string') {
-      detailedErrorMessage = e.message;
-    } else if (typeof e === 'string') {
-      detailedErrorMessage = e;
-    } else if (typeof e === 'object' && e !== null) {
-        try {
-            detailedErrorMessage = `Unknown error object: ${JSON.stringify(e)}`;
-        } catch (stringifyError) {
-            detailedErrorMessage = 'Unknown error object (could not stringify).';
-        }
-    }
-
-    if (!detailedErrorMessage || String(detailedErrorMessage).trim() === '') {
-        detailedErrorMessage = 'An unspecified error occurred during login. Please check credentials or server logs.';
-    }
-
-    // console.error('Login error (processed message to be returned):', detailedErrorMessage);
-    return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
-  }
-}
+// Removed handleSignUp and handleLogin server actions
