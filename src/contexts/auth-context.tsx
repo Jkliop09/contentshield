@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation'; // Import useRouter and usePathname
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -18,6 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); 
+  const pathname = usePathname(); 
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -27,6 +30,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const authRoutes = ['/login', '/signup'];
+      // If user is logged in and currently on an auth page, redirect to /overview
+      if (authRoutes.includes(pathname)) {
+        router.push('/overview');
+      }
+    }
+    // Note: Redirection for unauthenticated users trying to access protected routes
+    // is primarily handled by the middleware.
+  }, [user, loading, pathname, router]);
+
 
   if (loading) {
     return (
@@ -50,3 +66,4 @@ export function useAuth() {
   }
   return context;
 }
+
