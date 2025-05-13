@@ -26,6 +26,8 @@ export function AuthButton() {
     try {
       await signOut(auth);
       setUser(null); // Update context state
+      // HACK: Clear the mock cookie set during sign-in.
+      document.cookie = "firebaseSession=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       router.push('/login');
     } catch (error) {
       console.error('Error signing out:', error);
