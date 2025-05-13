@@ -135,15 +135,17 @@ export async function handleGenerateApiKey(
 // For this example, we'll proceed, but in a real app, consider client-side calls or Firebase Admin.
 
 export async function handleSignUp(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const confirmPassword = formData.get('confirmPassword') as string;
+  const emailValue = formData.get('email') as string;
+  const passwordValue = formData.get('password') as string;
+  const confirmPasswordValue = formData.get('confirmPassword') as string;
 
-  const validation = signUpSchema.safeParse({ email, password, confirmPassword });
+  const validation = signUpSchema.safeParse({ email: emailValue, password: passwordValue, confirmPassword: confirmPasswordValue });
 
   if (!validation.success) {
     return { error: validation.error.errors.map(e => e.message).join(', '), success: false, timestamp: Date.now() };
   }
+
+  const { email, password } = validation.data;
 
   try {
     // This is a client-side SDK method. For server actions, you'd typically use Firebase Admin SDK.
@@ -152,23 +154,44 @@ export async function handleSignUp(prevState: AuthState, formData: FormData): Pr
     await createUserWithEmailAndPassword(auth, email, password);
     return { message: 'Sign up successful! Please log in.', success: true, timestamp: Date.now() };
   } catch (e: any) {
-    console.error('Sign up error:', e);
-    // Firebase errors often have a 'code' property like 'auth/email-already-in-use'
-    const errorMessage = e.message || 'An unknown error occurred during sign up.';
-    return { error: errorMessage, success: false, timestamp: Date.now() };
+    console.error('Sign up error (raw object):', e); // Log the full error object
+
+    let detailedErrorMessage = 'An unknown error occurred during sign up.';
+    if (e instanceof Error) { // Standard JS Error
+      detailedErrorMessage = e.message;
+    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') { // Firebase error structure
+      detailedErrorMessage = `Firebase Auth Error (${e.code}): ${e.message}`;
+    } else if (e && typeof e.message === 'string') { // Other error objects with a message
+      detailedErrorMessage = e.message;
+    } else if (typeof e === 'string') { // If the error is just a string
+      detailedErrorMessage = e;
+    }
+    // For debugging, include a stringified version if it's an object but not recognized
+    else if (typeof e === 'object' && e !== null) {
+        try {
+            detailedErrorMessage = `Unknown error object: ${JSON.stringify(e)}`;
+        } catch (stringifyError) {
+            detailedErrorMessage = 'Unknown error object (could not stringify).';
+        }
+    }
+    
+    console.error('Sign up error (processed message):', detailedErrorMessage);
+    return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }
 
 export async function handleLogin(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const emailValue = formData.get('email') as string;
+  const passwordValue = formData.get('password') as string;
 
-  const validation = loginSchema.safeParse({ email, password });
+  const validation = loginSchema.safeParse({ email: emailValue, password: passwordValue });
 
   if (!validation.success) {
     return { error: validation.error.errors.map(e => e.message).join(', '), success: false, timestamp: Date.now() };
   }
   
+  const { email, password } = validation.data;
+
   try {
     // Similar to signUp, this is a client-side SDK method.
     // It won't establish a server session directly via this server action.
@@ -176,8 +199,25 @@ export async function handleLogin(prevState: AuthState, formData: FormData): Pro
     await signInWithEmailAndPassword(auth, email, password);
     return { message: 'Login successful!', success: true, timestamp: Date.now() };
   } catch (e: any) {
-    console.error('Login error:', e);
-    const errorMessage = e.message || 'An unknown error occurred during login.';
-    return { error: errorMessage, success: false, timestamp: Date.now() };
+    console.error('Login error (raw object):', e);
+    let detailedErrorMessage = 'An unknown error occurred during login.';
+     if (e instanceof Error) {
+      detailedErrorMessage = e.message;
+    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') {
+      detailedErrorMessage = `Firebase Auth Error (${e.code}): ${e.message}`;
+    } else if (e && typeof e.message === 'string') {
+      detailedErrorMessage = e.message;
+    } else if (typeof e === 'string') {
+      detailedErrorMessage = e;
+    } else if (typeof e === 'object' && e !== null) {
+        try {
+            detailedErrorMessage = `Unknown error object: ${JSON.stringify(e)}`;
+        } catch (stringifyError) {
+            detailedErrorMessage = 'Unknown error object (could not stringify).';
+        }
+    }
+    console.error('Login error (processed message):', detailedErrorMessage);
+    return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }
+
