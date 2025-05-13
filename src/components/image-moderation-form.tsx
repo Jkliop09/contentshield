@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useFormState } from 'react-dom';
+import { useState, useEffect, useRef, useActionState } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +17,7 @@ const initialState: ImageModerationState = {
 };
 
 export function ImageModerationForm() {
-  const [state, formAction] = useFormState(handleImageModeration, initialState);
+  const [state, formAction] = useActionState(handleImageModeration, initialState);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,3 +129,4 @@ export function ImageModerationForm() {
     </form>
   );
 }
+

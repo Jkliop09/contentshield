@@ -1,12 +1,11 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useActionState, useEffect, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { handleTextModeration, type TextModerationState } from '@/app/actions';
 import { SubmitButton } from '@/components/submit-button';
 import { ModerationResultDisplay } from '@/components/moderation-result-display';
-import { useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -16,7 +15,7 @@ const initialState: TextModerationState = {
 };
 
 export function TextModerationForm() {
-  const [state, formAction] = useFormState(handleTextModeration, initialState);
+  const [state, formAction] = useActionState(handleTextModeration, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -66,3 +65,4 @@ export function TextModerationForm() {
     </form>
   );
 }
+
