@@ -1,12 +1,11 @@
-
 'use server';
 
 import { moderateText, type ModerateTextInput, type ModerateTextOutput } from '@/ai/flows/moderate-text';
 import { moderateImage, type ModerateImageInput, type ModerateImageOutput } from '@/ai/flows/moderate-image';
 import { generateAndStoreApiKey } from '@/services/apiKeyService';
 import { z } from 'zod';
-import { auth } from '@/lib/firebase'; // Firebase Admin SDK should be used here for server-side auth
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // These are client-side methods
+import { auth } from '@/lib/firebase'; // Firebase client SDK auth instance
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // Firebase client SDK methods
 
 export interface TextModerationState {
   result?: ModerateTextOutput;
@@ -129,11 +128,6 @@ export async function handleGenerateApiKey(
   }
 }
 
-// Note: Firebase client SDK methods (createUserWithEmailAndPassword, signInWithEmailAndPassword) 
-// are typically called on the client. Using them in server actions is unconventional and might
-// not work as expected without proper Firebase Admin SDK setup for managing users server-side.
-// For this example, we'll proceed, but in a real app, consider client-side calls or Firebase Admin.
-
 export async function handleSignUp(prevState: AuthState, formData: FormData): Promise<AuthState> {
   const emailValue = formData.get('email') as string;
   const passwordValue = formData.get('password') as string;
@@ -148,26 +142,24 @@ export async function handleSignUp(prevState: AuthState, formData: FormData): Pr
   const { email, password } = validation.data;
 
   try {
-    // This is a client-side SDK method. For server actions, you'd typically use Firebase Admin SDK.
-    // This will not actually sign the user in on the server session, but create the user in Firebase.
-    // Client will need to re-authenticate or handle the user object returned by Firebase on client-side.
+    // Using Firebase client SDK's createUserWithEmailAndPassword.
+    // This will create the user in Firebase. Client will need to handle login subsequently.
+    // Ensure Firebase is correctly initialized with NEXT_PUBLIC_ environment variables.
     await createUserWithEmailAndPassword(auth, email, password);
     return { message: 'Sign up successful! Please log in.', success: true, timestamp: Date.now() };
   } catch (e: any) {
-    console.error('Sign up error (raw object):', e); // Log the full error object
+    console.error('Sign up error (raw object):', e); 
 
     let detailedErrorMessage = 'An unknown error occurred during sign up.';
-    if (e instanceof Error) { // Standard JS Error
+    if (e instanceof Error) { 
       detailedErrorMessage = e.message;
-    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') { // Firebase error structure
+    } else if (e && typeof e.code === 'string' && typeof e.message === 'string') { 
       detailedErrorMessage = `Firebase Auth Error (${e.code}): ${e.message}`;
-    } else if (e && typeof e.message === 'string') { // Other error objects with a message
+    } else if (e && typeof e.message === 'string') { 
       detailedErrorMessage = e.message;
-    } else if (typeof e === 'string') { // If the error is just a string
+    } else if (typeof e === 'string') { 
       detailedErrorMessage = e;
-    }
-    // For debugging, include a stringified version if it's an object but not recognized
-    else if (typeof e === 'object' && e !== null) {
+    } else if (typeof e === 'object' && e !== null) {
         try {
             detailedErrorMessage = `Unknown error object: ${JSON.stringify(e)}`;
         } catch (stringifyError) {
@@ -175,7 +167,12 @@ export async function handleSignUp(prevState: AuthState, formData: FormData): Pr
         }
     }
     
-    console.error('Sign up error (processed message):', detailedErrorMessage);
+    // Ensure the error message is never empty to guarantee toast visibility.
+    if (!detailedErrorMessage || String(detailedErrorMessage).trim() === '') {
+        detailedErrorMessage = 'An unspecified error occurred during sign up. This might be due to missing Firebase configuration. Please check server logs and ensure Firebase environment variables are set.';
+    }
+    
+    console.error('Sign up error (processed message to be returned):', detailedErrorMessage);
     return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }
@@ -193,9 +190,6 @@ export async function handleLogin(prevState: AuthState, formData: FormData): Pro
   const { email, password } = validation.data;
 
   try {
-    // Similar to signUp, this is a client-side SDK method.
-    // It won't establish a server session directly via this server action.
-    // The client needs to handle the auth state change.
     await signInWithEmailAndPassword(auth, email, password);
     return { message: 'Login successful!', success: true, timestamp: Date.now() };
   } catch (e: any) {
@@ -216,8 +210,12 @@ export async function handleLogin(prevState: AuthState, formData: FormData): Pro
             detailedErrorMessage = 'Unknown error object (could not stringify).';
         }
     }
-    console.error('Login error (processed message):', detailedErrorMessage);
+
+    if (!detailedErrorMessage || String(detailedErrorMessage).trim() === '') {
+        detailedErrorMessage = 'An unspecified error occurred during login. Please check credentials or server logs.';
+    }
+
+    console.error('Login error (processed message to be returned):', detailedErrorMessage);
     return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }
-
