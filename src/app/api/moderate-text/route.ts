@@ -1,12 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 import { moderateText, type ModerateTextInput, type ModerateTextOutput } from '@/ai/flows/moderate-text';
+import { validateApiKey } from '@/services/apiKeyService';
 
 const RequestBodySchema = z.object({
   text: z.string().min(1, 'Text cannot be empty.'), 
 });
 
 export async function POST(request: NextRequest) {
+  const apiKey = request.headers.get('X-API-Key');
+  if (!apiKey || !(await validateApiKey(apiKey))) {
+    return NextResponse.json({ error: 'Unauthorized: Invalid or missing API Key.' }, { status: 401 });
+  }
+
   let requestBody;
   try {
     requestBody = await request.json();

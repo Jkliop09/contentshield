@@ -2,6 +2,7 @@
 
 import { moderateText, type ModerateTextInput, type ModerateTextOutput } from '@/ai/flows/moderate-text';
 import { moderateImage, type ModerateImageInput, type ModerateImageOutput } from '@/ai/flows/moderate-image';
+import { generateAndStoreApiKey } from '@/services/apiKeyService';
 import { z } from 'zod';
 
 export interface TextModerationState {
@@ -12,6 +13,12 @@ export interface TextModerationState {
 
 export interface ImageModerationState {
   result?: ModerateImageOutput;
+  error?: string | null;
+  timestamp?: number;
+}
+
+export interface ApiKeyGenerationState {
+  apiKey?: string;
   error?: string | null;
   timestamp?: number;
 }
@@ -78,6 +85,20 @@ export async function handleImageModeration(
   } catch (e) {
     console.error('Image moderation error:', e);
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during image moderation.';
+    return { error: errorMessage, timestamp: Date.now() };
+  }
+}
+
+export async function handleGenerateApiKey(
+  prevState: ApiKeyGenerationState,
+  formData: FormData
+): Promise<ApiKeyGenerationState> {
+  try {
+    const apiKey = await generateAndStoreApiKey();
+    return { apiKey, error: null, timestamp: Date.now() };
+  } catch (e) {
+    console.error('API Key generation error:', e);
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred during API key generation.';
     return { error: errorMessage, timestamp: Date.now() };
   }
 }

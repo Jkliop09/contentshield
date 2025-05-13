@@ -4,12 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CodeBlock } from "@/components/code-block";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, BookOpenCheck } from "lucide-react";
+import { Terminal, BookOpenCheck, KeyRound, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 
 export default function DocumentationPage() {
   const textApiCurl = `curl -X POST \\
   https://contentshield.vercel.app/api/moderate-text \\
   -H 'Content-Type: application/json' \\
+  -H 'X-API-Key: YOUR_GENERATED_API_KEY' \\
   -d '{
     "text": "This is some example text to check for hate speech."
   }'`;
@@ -25,6 +27,9 @@ export default function DocumentationPage() {
  const textApiError400 = `{
   "error": "Text cannot be empty."
 }`;
+ const textApiError401 = `{
+  "error": "Unauthorized: Invalid or missing API Key."
+}`;
  const textApiError500 = `{
   "error": "An unknown error occurred during text moderation."
 }`;
@@ -32,6 +37,7 @@ export default function DocumentationPage() {
   const imageApiCurl = `curl -X POST \\
   https://contentshield.vercel.app/api/moderate-image \\
   -H 'Content-Type: application/json' \\
+  -H 'X-API-Key: YOUR_GENERATED_API_KEY' \\
   -d '{
     "imageDataUri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
   }'`;
@@ -46,6 +52,9 @@ export default function DocumentationPage() {
 }`;
   const imageApiError400 = `{
   "error": "imageDataUri cannot be empty."
+}`;
+  const imageApiError401 = `{
+  "error": "Unauthorized: Invalid or missing API Key."
 }`;
   const imageApiError500 = `{
   "error": "An unknown error occurred during image moderation."
@@ -70,11 +79,12 @@ export default function DocumentationPage() {
 const sdkTextExample = `
 import { ContentGuardianSDK } from '@/lib/content-guardian-sdk';
 
-// Initialize SDK (defaults to https://contentshield.vercel.app/)
-const sdk = new ContentGuardianSDK(); 
+// Initialize SDK with your API key
+const apiKey = "YOUR_GENERATED_API_KEY"; // Replace with your actual key
+const sdk = new ContentGuardianSDK('https://contentshield.vercel.app/', apiKey); 
 
 // Or, if calling from the same origin (e.g., if API is hosted with this app):
-// const sdk = new ContentGuardianSDK(''); 
+// const sdk = new ContentGuardianSDK('', apiKey); 
 
 async function checkText(textToCheck) {
   try {
@@ -101,7 +111,8 @@ async function checkText(textToCheck) {
 const sdkImageExample = `
 import { ContentGuardianSDK } from '@/lib/content-guardian-sdk';
 
-const sdk = new ContentGuardianSDK(); // Defaults to https://contentshield.vercel.app/
+const apiKey = "YOUR_GENERATED_API_KEY"; // Replace with your actual key
+const sdk = new ContentGuardianSDK('https://contentshield.vercel.app/', apiKey);
 
 // Helper function (as shown in cURL section or your own implementation)
 async function fileToDataUri(file) {
@@ -152,10 +163,11 @@ async function checkImage(imageFile) {
   return (
     <div className="space-y-8">
       <Alert>
-        <Terminal className="h-4 w-4" />
-        <AlertTitle>Using the API</AlertTitle>
+        <KeyRound className="h-4 w-4" />
+        <AlertTitle>API Authentication Required</AlertTitle>
         <AlertDescription>
-          You can use the Content Guardian API to programmatically moderate text and images using cURL or our SDK.
+          All API requests require an <code>X-API-Key</code> header for authentication.
+          You can generate an API key from the <Link href="/" className="font-medium text-primary hover:underline">Moderation Tools page</Link>.
           The API is hosted at <code>https://contentshield.vercel.app/</code>.
           API responses might take a few seconds due to AI model processing.
         </AlertDescription>
@@ -169,13 +181,29 @@ async function checkImage(imageFile) {
             <CardTitle className="text-2xl">Using the SDK (JavaScript/TypeScript)</CardTitle>
           </div>
           <CardDescription>
-            For easier integration into your JavaScript/TypeScript frontend applications, use the Content Guardian SDK.
-            It simplifies API calls and error handling.
+            For easier integration into your JavaScript/TypeScript applications, use the Content Guardian SDK.
+            It simplifies API calls, authentication, and error handling.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+           <div>
+            <h3 className="font-semibold text-lg mb-1">1. Obtain an API Key</h3>
+            <p className="mb-2">
+              Navigate to the <Link href="/" className="font-medium text-primary hover:underline">Moderation Tools page</Link> and use the API Key Generator to create a new key.
+              Copy this key and store it securely, as it will only be shown once.
+            </p>
+            <Alert variant="default" className="border-accent">
+                <TriangleAlert className="h-4 w-4 text-accent"/>
+                <AlertTitle>Secure Your API Key</AlertTitle>
+                <AlertDescription>
+                Treat your API key like a password. Do not embed it directly in client-side code that might be publicly accessible.
+                For frontend applications, consider using a backend proxy or serverless function to make API calls with the key.
+                </AlertDescription>
+            </Alert>
+          </div>
+
           <div>
-            <h3 className="font-semibold text-lg mb-1">1. Setup</h3>
+            <h3 className="font-semibold text-lg mb-1">2. Setup</h3>
             <p className="mb-2">
               The SDK is located at <code>src/lib/content-guardian-sdk.ts</code>.
               If you are developing within this Next.js application (e.g., for client-side components), you can import it directly:
@@ -189,16 +217,17 @@ async function checkImage(imageFile) {
           </div>
 
           <div>
-            <h3 className="font-semibold text-lg mb-1">2. Initialization</h3>
-            <p className="mb-2">Create an instance of the SDK. By default, it points to <code>https://contentshield.vercel.app/</code>.</p>
+            <h3 className="font-semibold text-lg mb-1">3. Initialization</h3>
+            <p className="mb-2">Create an instance of the SDK, providing your API key. By default, it points to <code>https://contentshield.vercel.app/</code>.</p>
             <CodeBlock title="JavaScript/TypeScript">{`// Default initialization (points to the deployed API)
-const sdk = new ContentGuardianSDK(); 
+const apiKey = "YOUR_GENERATED_API_KEY"; // Replace with your key
+const sdk = new ContentGuardianSDK('https://contentshield.vercel.app/', apiKey); 
 
-// For same-origin API calls (if your frontend and API are on the same domain and you want to use relative paths)
-// const sdk = new ContentGuardianSDK(''); 
+// For same-origin API calls (if your frontend and API are on the same domain)
+// const sdk = new ContentGuardianSDK('', apiKey); 
 
 // To specify a different API server:
-// const sdk = new ContentGuardianSDK('https://your-custom-api-server.example.com');`}</CodeBlock>
+// const sdk = new ContentGuardianSDK('https://your-custom-api-server.example.com', apiKey);`}</CodeBlock>
           </div>
 
           <Card className="pt-4 bg-card/50 shadow-sm">
@@ -226,13 +255,15 @@ const sdk = new ContentGuardianSDK();
           </Card>
 
           <div>
-            <h3 className="font-semibold text-lg mb-1">3. Error Handling</h3>
+            <h3 className="font-semibold text-lg mb-1">4. Error Handling</h3>
             <p>
               All SDK methods (<code>moderateText</code>, <code>moderateImage</code>) are asynchronous and return Promises.
-              If an API request fails, input validation within the SDK fails, or any other error occurs, the Promise will be rejected with an <code>Error</code> object.
+              If an API request fails (e.g., due to an invalid API key, network issue, or server error), input validation within the SDK fails, or any other error occurs, the Promise will be rejected with an <code>Error</code> object.
               The <code>error.message</code> property will contain a description of the error. You should wrap SDK calls in <code>try...catch</code> blocks to handle potential errors gracefully.
             </p>
             <CodeBlock title="Error Handling Example">{`async function safeModerateText(text) {
+  const apiKey = "YOUR_VALID_API_KEY"; // Ensure this is set
+  const sdk = new ContentGuardianSDK('https://contentshield.vercel.app/', apiKey);
   try {
     const result = await sdk.moderateText(text);
     console.log("Success:", result);
@@ -240,14 +271,16 @@ const sdk = new ContentGuardianSDK();
   } catch (error) {
     console.error("Moderation failed:", error.message);
     // Display user-friendly error message based on error.message
+    // Example: if (error.message.includes("Unauthorized")) { /* handle auth error */ }
   }
 }
 
 safeModerateText("An example text.");
-safeModerateText(""); // This will throw an error due to empty input`}</CodeBlock>
+safeModerateText(""); // This will throw an error due to empty input
+// To test auth error, try with an invalid or no API key in SDK initialization.`}</CodeBlock>
           </div>
            <div>
-            <h3 className="font-semibold text-lg mb-1">4. Type Definitions</h3>
+            <h3 className="font-semibold text-lg mb-1">5. Type Definitions</h3>
             <p className="mb-2">The SDK exports TypeScript interfaces for request and response types if you are using TypeScript:</p>
             <CodeBlock title="TypeScript Interfaces (from sdk.ts)">{`
 export interface TextModerationResult {
@@ -275,7 +308,12 @@ export interface ModerationError { // This is the shape of error from API if res
             <Terminal className="h-7 w-7 text-primary" />
             <CardTitle className="text-2xl">Direct API Usage (cURL)</CardTitle>
           </div>
-          <CardDescription>Use these examples if you prefer to interact with the API directly using tools like cURL. The API is hosted at <code>https://contentshield.vercel.app/</code>.</CardDescription>
+          <CardDescription>
+            Use these examples if you prefer to interact with the API directly using tools like cURL.
+            The API is hosted at <code>https://contentshield.vercel.app/</code>.
+            Remember to replace <code>YOUR_GENERATED_API_KEY</code> with an actual key obtained from the
+            <Link href="/" className="font-medium text-primary hover:underline"> Moderation Tools page</Link>.
+          </CardDescription>
         </CardHeader>
         <CardContent>
             <Card className="pt-4 mb-6 bg-card/50 shadow-sm">
@@ -292,6 +330,7 @@ export interface ModerationError { // This is the shape of error from API if res
                     <h3 className="font-semibold text-lg mb-1">Headers</h3>
                     <ul className="list-disc list-inside pl-4">
                     <li><code>Content-Type: application/json</code></li>
+                    <li><code>X-API-Key: YOUR_GENERATED_API_KEY</code> (Required)</li>
                     </ul>
                 </div>
                 <div>
@@ -315,6 +354,7 @@ export interface ModerationError { // This is the shape of error from API if res
                     <CodeBlock title="Success (200 OK - Hate speech detected)">{textApiSuccessHate}</CodeBlock>
                     <CodeBlock title="Success (200 OK - Safe)">{textApiSuccessSafe}</CodeBlock>
                     <CodeBlock title="Error (400 Bad Request - Invalid Input)">{textApiError400}</CodeBlock>
+                    <CodeBlock title="Error (401 Unauthorized - Invalid/Missing API Key)">{textApiError401}</CodeBlock>
                     <CodeBlock title="Error (500 Internal Server Error)">{textApiError500}</CodeBlock>
                 </div>
                 </CardContent>
@@ -334,6 +374,7 @@ export interface ModerationError { // This is the shape of error from API if res
                     <h3 className="font-semibold text-lg mb-1">Headers</h3>
                     <ul className="list-disc list-inside pl-4">
                     <li><code>Content-Type: application/json</code></li>
+                    <li><code>X-API-Key: YOUR_GENERATED_API_KEY</code> (Required)</li>
                     </ul>
                 </div>
                 <div>
@@ -363,6 +404,7 @@ export interface ModerationError { // This is the shape of error from API if res
                     <CodeBlock title="Success (200 OK - NSFW detected)">{imageApiSuccessNsfw}</CodeBlock>
                     <CodeBlock title="Success (200 OK - Safe)">{imageApiSuccessSafe}</CodeBlock>
                     <CodeBlock title="Error (400 Bad Request - Invalid Input)">{imageApiError400}</CodeBlock>
+                    <CodeBlock title="Error (401 Unauthorized - Invalid/Missing API Key)">{imageApiError401}</CodeBlock>
                     <CodeBlock title="Error (500 Internal Server Error)">{imageApiError500}</CodeBlock>
                 </div>
                 </CardContent>
@@ -378,4 +420,3 @@ export interface ModerationError { // This is the shape of error from API if res
     </div>
   );
 }
-

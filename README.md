@@ -7,6 +7,7 @@ To get started, take a look at src/app/page.tsx.
 ## Content Guardian API Documentation
 
 You can use the Content Guardian API to moderate text and images programmatically.
+**API Key Required:** All API requests must include a valid `X-API-Key` header. You can generate an API key from the main application page.
 
 ### API Endpoints
 
@@ -14,10 +15,11 @@ You can use the Content Guardian API to moderate text and images programmaticall
 
 Moderates text to detect potential hate speech.
 
-- **URL:** `/api/moderate-text`
+- **URL:** `https://contentshield.vercel.app/api/moderate-text`
 - **Method:** `POST`
 - **Headers:**
     - `Content-Type: application/json`
+    - `X-API-Key: YOUR_GENERATED_API_KEY` (Required)
 - **Request Body (JSON):**
   ```json
   {
@@ -28,9 +30,10 @@ Moderates text to detect potential hate speech.
     - `text` (string, required): The text content to be analyzed.
 - **Example Request (cURL):**
   ```bash
-  curl -X POST \
-    http://localhost:9002/api/moderate-text \
-    -H 'Content-Type: application/json' \
+  curl -X POST \\
+    https://contentshield.vercel.app/api/moderate-text \\
+    -H 'Content-Type: application/json' \\
+    -H 'X-API-Key: YOUR_GENERATED_API_KEY' \\
     -d '{
       "text": "This is some example text to check for hate speech."
     }'
@@ -42,17 +45,16 @@ Moderates text to detect potential hate speech.
     "confidenceScore": 0.123456789
   }
   ```
-  Or, if hate speech is detected:
-  ```json
-  {
-    "isHateSpeech": true,
-    "confidenceScore": 0.987654321
-  }
-  ```
 - **Example Error Response (400 Bad Request - Invalid Input):**
   ```json
   {
     "error": "Text cannot be empty."
+  }
+  ```
+- **Example Error Response (401 Unauthorized - Invalid/Missing API Key):**
+  ```json
+  {
+    "error": "Unauthorized: Invalid or missing API Key."
   }
   ```
 - **Example Error Response (500 Internal Server Error):**
@@ -66,10 +68,11 @@ Moderates text to detect potential hate speech.
 
 Moderates an image to detect NSFW (Not Safe For Work) content.
 
-- **URL:** `/api/moderate-image`
+- **URL:** `https://contentshield.vercel.app/api/moderate-image`
 - **Method:** `POST`
 - **Headers:**
     - `Content-Type: application/json`
+    - `X-API-Key: YOUR_GENERATED_API_KEY` (Required)
 - **Request Body (JSON):**
   ```json
   {
@@ -100,9 +103,10 @@ Moderates an image to detect NSFW (Not Safe For Work) content.
 - **Example Request (cURL):**
   *(Note: The `imageDataUri` will be very long, so it's truncated here for brevity.)*
   ```bash
-  curl -X POST \
-    http://localhost:9002/api/moderate-image \
-    -H 'Content-Type: application/json' \
+  curl -X POST \\
+    https://contentshield.vercel.app/api/moderate-image \\
+    -H 'Content-Type: application/json' \\
+    -H 'X-API-Key: YOUR_GENERATED_API_KEY' \\
     -d '{
       "imageDataUri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
     }'
@@ -114,17 +118,16 @@ Moderates an image to detect NSFW (Not Safe For Work) content.
     "confidence": 0.0567890123
   }
   ```
-  Or, if NSFW content is detected:
-  ```json
-  {
-    "isNsfw": true,
-    "confidence": 0.951234567
-  }
-  ```
 - **Example Error Response (400 Bad Request - Invalid Input):**
   ```json
   {
     "error": "imageDataUri cannot be empty."
+  }
+  ```
+- **Example Error Response (401 Unauthorized - Invalid/Missing API Key):**
+  ```json
+  {
+    "error": "Unauthorized: Invalid or missing API Key."
   }
   ```
 - **Example Error Response (500 Internal Server Error):**
@@ -134,10 +137,24 @@ Moderates an image to detect NSFW (Not Safe For Work) content.
   }
   ```
 
-### General Notes
+### Using the SDK (JavaScript/TypeScript)
 
-- Ensure your API requests are made to the correct port where your Next.js application is running (default is `3000`, but in this project it's configured to `9002` for development).
+For easier integration, use the `ContentGuardianSDK` located in `src/lib/content-guardian-sdk.ts`.
+
+1.  **Obtain an API Key:** Generate an API key from the main application page (Moderation Tools).
+2.  **Initialize SDK:**
+    ```javascript
+    import { ContentGuardianSDK } from '@/lib/content-guardian-sdk'; // Adjust path if using outside this project
+
+    const apiKey = "YOUR_GENERATED_API_KEY"; // Replace with your key
+    const sdk = new ContentGuardianSDK('https://contentshield.vercel.app/', apiKey);
+    ```
+3.  **Usage Examples:**
+    Refer to the [API Documentation page](/documentation) within the application for detailed SDK usage examples for text and image moderation, including error handling.
+
+### General Notes
+- Ensure your API requests are made to the correct port and include your `X-API-Key`.
+- The API is hosted at `https://contentshield.vercel.app/`.
 - The Genkit AI models used for moderation have their own processing times, so API responses might take a few seconds.
 - The confidence scores range from 0 (not harmful/NSFW) to 1 (very likely harmful/NSFW).
-- For image moderation, ensure the `imageDataUri` is correctly formatted and the image data is properly Base64 encoded. Supported image types by the moderation UI are PNG, JPG, GIF, WebP. The underlying model might support more, but these are validated in the form.
-```
+- For image moderation, ensure the `imageDataUri` is correctly formatted and the image data is properly Base64 encoded. Supported image types by the moderation UI are PNG, JPG, GIF, WebP. The underlying model might support more.

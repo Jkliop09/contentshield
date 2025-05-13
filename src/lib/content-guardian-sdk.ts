@@ -24,25 +24,43 @@ export interface ModerationError {
 
 export class ContentGuardianSDK {
   private baseServerUrl: string;
+  private apiKey?: string;
 
   /**
    * Initializes the SDK.
    * @param baseServerUrl The base URL of the server hosting the Content Guardian API.
    *                      Defaults to 'https://contentshield.vercel.app/'.
    *                      Provide an empty string (e.g. `new ContentGuardianSDK('')`) for same-origin API calls if needed.
+   * @param apiKey Optional API key for authenticating requests.
    */
-  constructor(baseServerUrl: string = 'https://contentshield.vercel.app/') {
+  constructor(baseServerUrl: string = 'https://contentshield.vercel.app/', apiKey?: string) {
     this.baseServerUrl = baseServerUrl.endsWith('/') ? baseServerUrl.slice(0, -1) : baseServerUrl;
+    this.apiKey = apiKey;
+  }
+
+  /**
+   * Updates the API key used by the SDK.
+   * @param apiKey The new API key.
+   */
+  setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
   }
 
   private async _request<T>(apiPath: string, body: unknown): Promise<T> {
     const fullUrl = `${this.baseServerUrl}${apiPath}`; // apiPath will be like '/api/moderate-text'
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.apiKey) {
+      headers['X-API-Key'] = this.apiKey;
+    }
+
     try {
       const response = await fetch(fullUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(body),
       });
 
@@ -52,7 +70,7 @@ export class ContentGuardianSDK {
           errorData = await response.json();
         } catch (jsonError) {
           // If parsing error JSON fails, use status text
-          throw new Error(response.statusText || `API request failed with status ${response.status} at ${fullUrl}`);
+          throw new Error(errorData?.error || response.statusText || `API request failed with status ${response.status} at ${fullUrl}`);
         }
         throw new Error(errorData.error || `API request failed with status ${response.status} at ${fullUrl}`);
       }
@@ -76,6 +94,9 @@ export class ContentGuardianSDK {
    * @throws Error if the text is empty or if the API request fails.
    */
   async moderateText(text: string): Promise<TextModerationResult> {
+    if (!this.apiKey) {
+      throw new Error('API Key is not set. Please set it using the constructor or setApiKey method.');
+    }
     if (!text || text.trim() === '') {
       throw new Error('Text input for moderation cannot be empty.');
     }
@@ -89,6 +110,9 @@ export class ContentGuardianSDK {
    * @throws Error if the imageDataUri is invalid or if the API request fails.
    */
   async moderateImage(imageDataUri: string): Promise<ImageModerationResult> {
+    if (!this.apiKey) {
+      throw new Error('API Key is not set. Please set it using the constructor or setApiKey method.');
+    }
     if (!imageDataUri || !imageDataUri.startsWith('data:image/')) {
       throw new Error('Invalid imageDataUri format. Expected "data:image/...;base64,..."');
     }
@@ -99,4 +123,3 @@ export class ContentGuardianSDK {
     return this._request<ImageModerationResult>('/api/moderate-image', { imageDataUri });
   }
 }
-
