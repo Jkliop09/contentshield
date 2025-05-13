@@ -133,22 +133,36 @@ export async function handleSignUp(prevState: AuthState, formData: FormData): Pr
   const passwordValue = formData.get('password') as string;
   const confirmPasswordValue = formData.get('confirmPassword') as string;
 
+  // Server-side logging for incoming data
+  // console.log('handleSignUp action called with:', { emailValue, passwordValuePresent: !!passwordValue, confirmPasswordValuePresent: !!confirmPasswordValue });
+
+
   const validation = signUpSchema.safeParse({ email: emailValue, password: passwordValue, confirmPassword: confirmPasswordValue });
 
   if (!validation.success) {
-    return { error: validation.error.errors.map(e => e.message).join(', '), success: false, timestamp: Date.now() };
+    const errorMessages = validation.error.errors.map(e => e.message).join(', ');
+    // console.error('Sign up validation failed:', errorMessages);
+    return { error: errorMessages, success: false, timestamp: Date.now() };
   }
 
   const { email, password } = validation.data;
 
   try {
-    // Using Firebase client SDK's createUserWithEmailAndPassword.
-    // This will create the user in Firebase. Client will need to handle login subsequently.
-    // Ensure Firebase is correctly initialized with NEXT_PUBLIC_ environment variables.
+    // This is where Firebase initialization is critical.
+    // If NEXT_PUBLIC_FIREBASE_... env vars are not set, `auth` might be uninitialized.
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      console.error("CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is not set. Firebase operations will fail.");
+      // Forcing an error message if Firebase seems unconfigured.
+      return { error: "Firebase configuration is missing. Please check server logs and ensure Firebase environment variables (e.g., NEXT_PUBLIC_FIREBASE_API_KEY) are correctly set in your .env file.", success: false, timestamp: Date.now() };
+    }
+    
+    // console.log(`Attempting to create user: ${email}`);
     await createUserWithEmailAndPassword(auth, email, password);
+    // console.log(`User created successfully: ${email}`);
     return { message: 'Sign up successful! Please log in.', success: true, timestamp: Date.now() };
+
   } catch (e: any) {
-    console.error('Sign up error (raw object):', e); 
+    // console.error('Sign up error caught in try-catch (raw object):', e); 
 
     let detailedErrorMessage = 'An unknown error occurred during sign up.';
     if (e instanceof Error) { 
@@ -167,12 +181,11 @@ export async function handleSignUp(prevState: AuthState, formData: FormData): Pr
         }
     }
     
-    // Ensure the error message is never empty to guarantee toast visibility.
     if (!detailedErrorMessage || String(detailedErrorMessage).trim() === '') {
-        detailedErrorMessage = 'An unspecified error occurred during sign up. This might be due to missing Firebase configuration. Please check server logs and ensure Firebase environment variables are set.';
+        detailedErrorMessage = 'An unspecified error occurred during sign up. This might be due to missing Firebase configuration or network issues. Please check server logs and ensure Firebase environment variables are set.';
     }
     
-    console.error('Sign up error (processed message to be returned):', detailedErrorMessage);
+    // console.error('Sign up error (processed message to be returned to client):', detailedErrorMessage);
     return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }
@@ -190,10 +203,14 @@ export async function handleLogin(prevState: AuthState, formData: FormData): Pro
   const { email, password } = validation.data;
 
   try {
+    if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+      console.error("CRITICAL: NEXT_PUBLIC_FIREBASE_API_KEY is not set. Firebase operations will fail.");
+      return { error: "Firebase configuration is missing. Login cannot proceed.", success: false, timestamp: Date.now() };
+    }
     await signInWithEmailAndPassword(auth, email, password);
     return { message: 'Login successful!', success: true, timestamp: Date.now() };
   } catch (e: any) {
-    console.error('Login error (raw object):', e);
+    // console.error('Login error (raw object):', e);
     let detailedErrorMessage = 'An unknown error occurred during login.';
      if (e instanceof Error) {
       detailedErrorMessage = e.message;
@@ -215,7 +232,7 @@ export async function handleLogin(prevState: AuthState, formData: FormData): Pro
         detailedErrorMessage = 'An unspecified error occurred during login. Please check credentials or server logs.';
     }
 
-    console.error('Login error (processed message to be returned):', detailedErrorMessage);
+    // console.error('Login error (processed message to be returned):', detailedErrorMessage);
     return { error: detailedErrorMessage, success: false, timestamp: Date.now() };
   }
 }

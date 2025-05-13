@@ -25,11 +25,12 @@ export default function SignUpPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-     if (state?.timestamp) { // Check if state has been updated
+    // console.log('SignUpPage state changed:', state); // For debugging
+    if (state?.timestamp) { // Check if state has been updated
       if (state.error) {
         toast({
           title: 'Sign Up Failed',
-          description: state.error,
+          description: state.error || 'An unknown error occurred.', // Ensure description is not empty
           variant: 'destructive',
         });
       } else if (state.success && state.message) {
