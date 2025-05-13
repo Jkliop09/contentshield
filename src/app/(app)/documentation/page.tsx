@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CodeBlock } from "@/components/code-block";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, BookOpenCheck, KeyRound, TriangleAlert } from "lucide-react";
+import { Terminal, BookOpenCheck, KeyRound, TriangleAlert, PlayCircle } from "lucide-react";
 import Link from "next/link";
+import { ApiTester } from "@/components/api-tester";
 
 export default function DocumentationPage() {
   const textApiCurl = `curl -X POST \\
@@ -172,9 +173,26 @@ async function checkImage(imageFile) {
           API responses might take a few seconds due to AI model processing.
         </AlertDescription>
       </Alert>
+      
+      {/* Interactive API Tester Section */}
+      <Card className="shadow-lg border-primary border-2">
+        <CardHeader>
+          <div className="flex items-center space-x-3">
+            <PlayCircle className="h-7 w-7 text-primary" />
+            <CardTitle className="text-2xl">Interactive API Tester</CardTitle>
+          </div>
+          <CardDescription>
+            Test the API endpoints directly from your browser. Make sure you have generated an API key.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ApiTester />
+        </CardContent>
+      </Card>
+
 
       {/* SDK Section */}
-      <Card className="shadow-lg border-primary border-2">
+      <Card className="shadow-lg border-border">
         <CardHeader>
           <div className="flex items-center space-x-3">
             <BookOpenCheck className="h-7 w-7 text-primary" />
